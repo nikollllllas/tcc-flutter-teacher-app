@@ -1,0 +1,6 @@
+{
+  "appTitle": "teacher_app",
+  "@appTitle": {
+    "description": "App that instantiate an iBeacon"
+  }
+}
