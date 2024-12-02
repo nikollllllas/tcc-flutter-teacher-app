@@ -1,66 +1,99 @@
 import 'dart:async';
-
+import 'dart:io';
 import 'package:flutter_beacon/flutter_beacon.dart';
 import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:uuid/uuid.dart';
 
 class BeaconController extends GetxController {
-  var bluetoothState = BluetoothState.stateOff.obs;
-  var authorizationStatus = AuthorizationStatus.notDetermined.obs;
-  var locationService = false.obs;
-  late StreamSubscription<RangingResult> streamRanging;
-  final beacons = <Beacon>[].obs;
-  final _startBroadcasting = false.obs;
-  final _startScanning = false.obs;
-  final _pauseScanning = false.obs;
-  bool get bluetoothEnabled => bluetoothState.value == BluetoothState.stateOn;
-  bool get authorizationStatusOk =>
-      authorizationStatus.value == AuthorizationStatus.allowed ||
-      authorizationStatus.value == AuthorizationStatus.always;
-  bool get locationServiceEnabled => locationService.value;
+  RxBool isTransmitting = false.obs;
+  RxBool bluetoothEnabled = false.obs;
+  RxBool authorizationStatusOk = false.obs;
+  RxBool locationServiceEnabled = false.obs;
 
-  updateBluetoothState(BluetoothState state) {
-    bluetoothState.value = state;
+  final _uuid = Uuid();
+
+  Future<void> initializeBeacon() async {
+    try {
+      if (Platform.isAndroid) {
+        await Permission.bluetoothScan.request();
+        await Permission.bluetoothAdvertise.request();
+        await Permission.bluetoothConnect.request();
+      }
+
+      await flutterBeacon.initializeScanning;
+    } catch (e) {
+      print("Error initializing beacon: $e");
+    }
   }
 
-  updateAuthorizationStatus(AuthorizationStatus status) {
-    authorizationStatus.value = status;
+  Future<void> startBroadcasting() async {
+    try {
+      // Check if already broadcasting
+      final isBroadcasting = await flutterBeacon.isBroadcasting();
+      if (isBroadcasting) {
+        await stopBroadcasting();
+      }
+
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      await flutterBeacon.startBroadcast(BeaconBroadcast(
+        identifier: 'TeacherBeacon',
+        proximityUUID: _uuid.v4(),
+        major: 1,
+        minor: 100,
+        txPower: -59,
+      ));
+
+      isTransmitting.value = true;
+    } catch (e) {
+      print('Error broadcasting: $e');
+      isTransmitting.value = false;
+
+      if (e.toString().contains('code: 3')) {
+        await _retryBroadcast();
+      }
+    }
   }
 
-  updateLocationService(bool flag) {
-    locationService.value = flag;
+  Future<void> _retryBroadcast() async {
+    try {
+      await stopBroadcasting();
+      await Future.delayed(const Duration(seconds: 1));
+
+      await flutterBeacon.startBroadcast(BeaconBroadcast(
+        identifier: 'TeacherBeacon',
+        proximityUUID: _uuid.v4(),
+        major: 1,
+        minor: 100,
+        txPower: -59,
+      ));
+
+      isTransmitting.value = true;
+    } catch (retryError) {
+      print('Retry failed: $retryError');
+      isTransmitting.value = false;
+    }
   }
 
-  startBroadcasting() {
-    _startBroadcasting.value = true;
+  Future<void> stopBroadcasting() async {
+    try {
+      await flutterBeacon.stopBroadcast();
+      isTransmitting.value = false;
+    } catch (e) {
+      print('Error stopping broadcast: $e');
+    }
   }
 
-  stopBroadcasting() {
-    _startBroadcasting.value = false;
+  void updateBluetoothState(BluetoothState state) {
+    bluetoothEnabled.value = state == BluetoothState.stateOn;
   }
 
-  startScanning() {
-    _startScanning.value = true;
-    _pauseScanning.value = false;
+  void updateAuthorizationStatus(AuthorizationStatus status) {
+    authorizationStatusOk.value = status == AuthorizationStatus.allowed;
   }
 
-  pauseScanning() {
-    _startScanning.value = false;
-    _pauseScanning.value = true;
-  }
-
-  stopStreamRanging() async {
-    await streamRanging.cancel();
-  }
-
-  Stream<bool> get startBroadcastStream {
-    return _startBroadcasting.stream;
-  }
-
-  Stream<bool> get startStream {
-    return _startScanning.stream;
-  }
-
-  Stream<bool> get pauseStream {
-    return _pauseScanning.stream;
+  void updateLocationService(bool flag) {
+    locationServiceEnabled.value = flag;
   }
 }
