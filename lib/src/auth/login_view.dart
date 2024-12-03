@@ -6,7 +6,7 @@ import 'package:teacher_app/src/beacon/beacon_view.dart';
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
 
-  static const routeName = '/login';
+  static const routeName = '/';
 
   @override
   State<LoginView> createState() => _LoginViewState();
@@ -23,7 +23,8 @@ class _LoginViewState extends State<LoginView> {
     setState(() => _isLoading = true);
 
     try {
-      final url = Uri.parse('https://tcc-attendance-api.onrender.com/auth/login');
+      final url =
+          Uri.parse('https://tcc-attendance-api.onrender.com/auth/login');
       final id = int.parse(_idController.text);
       final password = _passwordController.text;
 
@@ -168,4 +169,4 @@ class _LoginViewState extends State<LoginView> {
     _passwordController.dispose();
     super.dispose();
   }
-} 
+}

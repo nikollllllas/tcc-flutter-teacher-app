@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_beacon/flutter_beacon.dart';
-// import 'package:teacher_app/src/beacon/beacon_controller.bbcast.dart';
 import 'package:get/get.dart';
 import 'package:teacher_app/src/beacon/beacon_controller.dart';
 
@@ -18,6 +17,7 @@ class BeaconView extends StatefulWidget {
 
 class _BeaconViewState extends State<BeaconView> with WidgetsBindingObserver {
   final controller = Get.put(BeaconController());
+  Color backgroundColor = const Color(0xFF182026);
 
   @override
   void initState() {
@@ -74,10 +74,10 @@ class _BeaconViewState extends State<BeaconView> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF182026),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         title: const Text('Chamadas'),
-        backgroundColor: const Color(0xFF182026),
+        backgroundColor: backgroundColor,
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 24),
       ),
       body: Obx(

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_beacon/flutter_beacon.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:uuid/uuid.dart';
+import 'package:app_settings/app_settings.dart';
 
 class BeaconController extends GetxController {
   RxBool isTransmitting = false.obs;
@@ -11,17 +11,41 @@ class BeaconController extends GetxController {
   RxBool authorizationStatusOk = false.obs;
   RxBool locationServiceEnabled = false.obs;
 
-  final _uuid = Uuid();
+  Future<bool> _requestPermissions() async {
+    if (Platform.isAndroid) {
+      // Request location permissions
+      final locationWhenInUse = await Permission.locationWhenInUse.request();
+      if (!locationWhenInUse.isGranted) {
+        await AppSettings.openAppSettings(type: AppSettingsType.location);
+        return false;
+      }
+
+      // Request Bluetooth permissions
+      await Permission.bluetoothScan.request();
+      await Permission.bluetoothAdvertise.request();
+      await Permission.bluetoothConnect.request();
+    }
+    return true;
+  }
 
   Future<void> initializeBeacon() async {
     try {
-      if (Platform.isAndroid) {
-        await Permission.bluetoothScan.request();
-        await Permission.bluetoothAdvertise.request();
-        await Permission.bluetoothConnect.request();
+      if (!await _requestPermissions()) {
+        print("Required permissions not granted");
+        return;
       }
 
       await flutterBeacon.initializeScanning;
+
+      final bluetoothState = await flutterBeacon.bluetoothState;
+      updateBluetoothState(bluetoothState);
+
+      final authorizationStatus = await flutterBeacon.authorizationStatus;
+      updateAuthorizationStatus(authorizationStatus);
+
+      final locationEnabled =
+          await flutterBeacon.checkLocationServicesIfEnabled;
+      updateLocationService(locationEnabled);
     } catch (e) {
       print("Error initializing beacon: $e");
     }
@@ -29,17 +53,14 @@ class BeaconController extends GetxController {
 
   Future<void> startBroadcasting() async {
     try {
-      // Check if already broadcasting
       final isBroadcasting = await flutterBeacon.isBroadcasting();
       if (isBroadcasting) {
         await stopBroadcasting();
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
-
       await flutterBeacon.startBroadcast(BeaconBroadcast(
         identifier: 'TeacherBeacon',
-        proximityUUID: _uuid.v4(),
+        proximityUUID: '702F0AFC-B84B-4F2E-BC8A-B0808FC98C8C',
         major: 1,
         minor: 100,
         txPower: -59,
@@ -49,7 +70,6 @@ class BeaconController extends GetxController {
     } catch (e) {
       print('Error broadcasting: $e');
       isTransmitting.value = false;
-
       if (e.toString().contains('code: 3')) {
         await _retryBroadcast();
       }
@@ -60,19 +80,9 @@ class BeaconController extends GetxController {
     try {
       await stopBroadcasting();
       await Future.delayed(const Duration(seconds: 1));
-
-      await flutterBeacon.startBroadcast(BeaconBroadcast(
-        identifier: 'TeacherBeacon',
-        proximityUUID: _uuid.v4(),
-        major: 1,
-        minor: 100,
-        txPower: -59,
-      ));
-
-      isTransmitting.value = true;
-    } catch (retryError) {
-      print('Retry failed: $retryError');
-      isTransmitting.value = false;
+      await startBroadcasting();
+    } catch (e) {
+      print('Retry failed: $e');
     }
   }
 
@@ -95,5 +105,11 @@ class BeaconController extends GetxController {
 
   void updateLocationService(bool flag) {
     locationServiceEnabled.value = flag;
+  }
+
+  @override
+  void onClose() {
+    stopBroadcasting();
+    super.onClose();
   }
 }
