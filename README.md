@@ -1,4 +1,4 @@
-# tcc_attendance_app
+# TCC Teacher App
 
 ## Getting Started
 
