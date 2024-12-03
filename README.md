@@ -1,29 +1,29 @@
-# teacher_app
-
-A new Flutter project.
+# TCC Teacher App
 
 ## Getting Started
 
-This project is a starting point for a Flutter application that follows the
-[simple app state management
-tutorial](https://flutter.dev/to/state-management-sample).
+### Installation Steps
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. **Clone the repository:**
 
-## Assets
+```bash
+git clone https://github.com/nikollllllas/tcc-flutter-teacher-app.git
+```
 
-The `assets` directory houses images, fonts, and any other files you want to
-include with your application.
+2. **Navigate to the project directory:**
 
-The `assets/images` directory contains [resolution-aware
-images](https://flutter.dev/to/resolution-aware-images).
+```bash
+cd tcc-flutter-teacher-app
+```
 
-## Localization
+3. **Install dependencies:**
 
-This project generates localized messages based on arb files found in
-the `lib/src/localization` directory.
+```bash
+flutter pub get
+```
 
-To support additional languages, please visit the tutorial on
-[Internationalizing Flutter apps](https://flutter.dev/to/internationalization).
+4. **Run the application:**
+
+```bash
+flutter run
+```
